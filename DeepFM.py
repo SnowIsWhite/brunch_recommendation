@@ -89,8 +89,18 @@ deep_out = dense_block(shape=deep_in.shape, hidden_units=hidden_units, dropouts=
 
 
 # DeepFM
+first_w=tf.keras.backend.variable(tf.random.normal([4], dtype=tf.float32, seed=seed)) 
+fm_first = tf.multiply(fm_first_order_list,first_w)
+fm_first = tf.reduce_sum(fm_first, axis=1)
+
+fm_second = tf.reduce_sum(fm_second_order, axis=1) #[NONe,]
+##맞는지 체크 해야하뮤ㅠ
+deep_comp = tf.reduce_sum(tf.reshape(deep_out,[-1,K]), axis=1) #[NONe,]
 # this returns x + y.
-final = keras.layers.add([fm_first_order_list,fm_second_order, deep_out])
+final = keras.layers.add([fm_first,fm_second, deep_comp]) #[none, ]이어야 
+
+##final output should be [none,]
+
 
 # model 
 ###inputs 수정할 것 -- 필요한 모든 input 들어가게 
