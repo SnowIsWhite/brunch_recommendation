@@ -1,5 +1,6 @@
 import nn_module 
 from nn_module import embed
+import tensorflow as tf
 # F : the number of the feature fields
 # K : embedding size 
 
@@ -12,9 +13,9 @@ df:
 user	doc	author	views	y
 Jason	q	Jason	4	1	
 Molly	M	Jason	24	1
-Amy		T	Tina	31	3
+Amy	T	Tina	3100	3
 Jake	q	Jason	24 	2
-Amy		Ay	Amy		3 	0
+Amy	Ay	Amy	3	0
 """""
 K=5  #embedding size
 
@@ -25,8 +26,22 @@ emb_doc = embed(df.doc, emb_dim=K, seed=1)
 emb_author = embed(df.author, emb_dim=K, seed=1)
 embed_views = embed(df.views, emb_dim=K, seed=1)
 
+emb_list = [
+emb_user,
+emb_doc,
+emb_author,
+emb_views
+] 
+
+emb_list_d=[]
+for emb in emb_list:
+    emb_list_d.append(tf.reshape(emb,[-1,1,K]) ) 
+embeddings = tf.concat(emb_list_d,axis=1)    #[None, F, K] 
+    
+
 # fm layer
 fm_list = []
+
 # fm_first order - normal connection (A conneciton with weight to be learned)
 ## for categorical var including users/docs
 bias_user = embed(df.user, emb_dim=1, seed=1) #[None, 1]
@@ -42,19 +57,13 @@ bias_author,
 bias_views
 ]
 fm_first_order_list = tf.concat(fm_first_order_list, axis=1) #[None, F]
-
+fm_list.append(fm_first_order_list)
 
 # fm_second order - weight-1 connection
-emb_list = [
-emb_user,
-emb_doc,
-emb_author,
-emb_views
-] 
 
-emb_concat = tf.concat(emb_list, axis=1) # [None, (F * K)]  
-emb_sum_squared = tf.square(tf.reduce_sum(emb_concat, axis=1)) #[None,]
-emb_squared_sum = tf.reduce_sum(tf.square(emb_concat), axis=1) #[None,]
+emb_concat = embeddings # [None, F , K)]  
+emb_sum_squared = tf.square(tf.reduce_sum(emb_concat, axis=1)) #[None,K]
+emb_squared_sum = tf.reduce_sum(tf.square(emb_concat), axis=1) #[None,K]
 
 fm_second_order = 0.5 * (emb_sum_squared - emb_squared_sum)
 fm_list.extend([emb_sum_squared, emb_squared_sum])
@@ -67,6 +76,43 @@ if enable_fm_higher_order:
 	fm_list.append(fm_higher_order)
 
 # Deep component
+
+deep_in = tf.concat(emb_list, axis=1) # [None, (F * K)] 
+#hidden_units = [self.params["fc_dim"]*4, self.params["fc_dim"]*2, self.params["fc_dim"]]
+hidden_units = [10]*4
+dropouts = [0.5] * len(hidden_units)
+## 이후 fully connected외 NN도 추가가능 
+deep_out = dense_block(shape=deep_in.shape, hidden_units=hidden_units, dropouts=dropouts, densenet=False,
+                         seed=1)   #(None, 5, 1)   
+
+#fm_list.append(deep_out)
+
+
+# DeepFM
+# this returns x + y.
+final = keras.layers.add([fm_first_order_list,fm_second_order, deep_out])
+
+# model 
+###inputs 수정할 것 -- 필요한 모든 input 들어가게 
+model = keras.Model(inputs=inputs, outputs=final)
+##Ref:https://stackoverflow.com/questions/46544329/keras-add-external-trainable-variable-to-graph
+#/???????
+model.layers[-1].trainable_weights.extend([
+emb_user,
+emb_doc,
+emb_author,
+emb_views,
+bias_user,
+bias_doc,
+bias_author])
+
+model.summary()
+
+model.compile(optimizer=optimizer,
+            loss=loss,
+            metrics=['accuracy'])
+model.fit
+
 
 
 
