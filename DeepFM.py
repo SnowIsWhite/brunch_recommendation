@@ -1,7 +1,6 @@
 import nn_module 
 from nn_module import embed
 # F : the number of the feature fields
-# F_cat : the number of the categorical feature fields
 # K : embedding size 
 
 
@@ -19,13 +18,12 @@ Amy		Ay	Amy		3 	0
 """""
 K=5  #embedding size
 
-# embed (only for categorical variables)
+# embed 
 # e_i := V_i*x_i where  i={1,2,...,},
 emb_user = embed(df.user, emb_dim=K, seed=1) # [None , K]
 emb_doc = embed(df.doc, emb_dim=K, seed=1)
 emb_author = embed(df.author, emb_dim=K, seed=1)
-
-
+embed_views = embed(df.views, emb_dim=K, seed=1)
 
 # fm layer
 fm_list = []
@@ -50,17 +48,14 @@ fm_first_order_list = tf.concat(fm_first_order_list, axis=1) #[None, F]
 emb_list = [
 emb_user,
 emb_doc,
-emb_author
+emb_author,
+emb_views
 ] 
-##for cont var
-emb_views = tf.constant(df.views, dtype = tf.float32,shape=[len(df.views),K])
-emb_list += emb_views
 
-emb_concat = tf.concat(emb_list, axis=1) # [None, (F_cat * K)]  
+emb_concat = tf.concat(emb_list, axis=1) # [None, (F * K)]  
 emb_sum_squared = tf.square(tf.reduce_sum(emb_concat, axis=1)) #[None,]
 emb_squared_sum = tf.reduce_sum(tf.square(emb_concat), axis=1) #[None,]
 
-##cont var 처리 부분 --> ?
 fm_second_order = 0.5 * (emb_sum_squared - emb_squared_sum)
 fm_list.extend([emb_sum_squared, emb_squared_sum])
 
@@ -69,7 +64,10 @@ enable_fm_higher_order = False
 if enable_fm_higher_order:
 	fm_higher_order = dense_block(fm_second_order, hidden_units=[K] * 2,
                                               dropouts=[0.] * 2, densenet=False, seed=1)
-fm_list.append(fm_higher_order)
+	fm_list.append(fm_higher_order)
+
+# Deep component
+
 
 
 

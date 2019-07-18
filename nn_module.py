@@ -9,14 +9,19 @@ import numpy as np
 #emb_dim=K
 
 def embed(x,emb_dim=K,seed=1, flatten=False, reduce_sum=False):
+	if x.dtypes in ['int64','int32','float32','float64']:
+		tmp_x=x
+		feat_value = tf.constant(x, dtype='float32') 
+		feat_value = tf.reshape(feat_value, shape=[-1, 1])
+		x=x.apply(str)
 	std = 0.001
 	minval = -std
 	maxval = std
+
 	#feat_value:id matching - like {A: 1, B: 2} here
 	t = [doc.split(" ") for doc in x]
 	all_values = itertools.chain.from_iterable(t)
-	f_dict = {token: idx if not token.isdigit() else int(token)
-	             for idx, token in enumerate(set(all_values))}
+	f_dict = {token: idx for idx, token in enumerate(set(all_values))}
  	size = len(f_dict) # the number of unique field value(feature) = p_i
 	id_vec=[] 
 	for i in range(len(x)):
@@ -28,6 +33,13 @@ def embed(x,emb_dim=K,seed=1, flatten=False, reduce_sum=False):
     #    out = tf.layers.Flatten(out) #[None,emb_dim]
     if reduce_sum:
         out = tf.reduce_sum(out, axis=1) #shape=[None(len(x))] 
+    # only for cont var
+	try:
+	    tmp_x
+	except NameError:
+		out=out
+	else:
+    	out = tf.multiply(out, feat_value)
     return out
 
 
