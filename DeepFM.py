@@ -17,6 +17,13 @@ Amy	T	Tina	3100	3
 Jake	q	Jason	24 	2
 Amy	Ay	Amy	3	0
 """""
+data = {'user': ['Jason', 'Molly', 'Amy', 'Jake', 'Amy'], 
+        'doc':['q', 'M', 'T', 'q', 'Ay'],
+        'author': ['Jason', 'Jason', 'Tina', 'Jason', 'Amy'],
+        'views': [4, 24, 3100, 2, 3],
+        'y': [1,1,3,1,1]}
+df = pd.DataFrame(data)
+
 K=5  #embedding size
 
 # embed 
@@ -47,9 +54,9 @@ fm_list = []
 bias_user = embed(df.user, emb_dim=1, seed=1) #[None, 1]
 bias_doc = embed(df.doc, emb_dim=1, seed=1)
 bias_author = embed(df.author, emb_dim=1, seed=1)
-## for cont. var 
-bias_views = tf.constant(df.views, dtype = tf.float32,shape=[len(df.views),1])
+bias_views = embed(df.views, emb_dim=1, seed=1)
 
+###여기서 bias 는 first order 에 해당하는 weight값임
 fm_first_order_list = [
 bias_user,
 bias_doc,
@@ -89,32 +96,27 @@ deep_out = dense_block(shape=deep_in.shape, hidden_units=hidden_units, dropouts=
 
 
 # DeepFM
-first_w=tf.keras.backend.variable(tf.random.normal([4], dtype=tf.float32, seed=seed)) 
-fm_first = tf.multiply(fm_first_order_list,first_w)
-fm_first = tf.reduce_sum(fm_first, axis=1)
-
+fm_first = tf.reduce_sum(fm_first_order_list, axis=1)
 fm_second = tf.reduce_sum(fm_second_order, axis=1) #[NONe,]
 ##맞는지 체크 해야하뮤ㅠ
 deep_comp = tf.reduce_sum(tf.reshape(deep_out,[-1,K]), axis=1) #[NONe,]
 # this returns x + y.
-final = keras.layers.add([fm_first,fm_second, deep_comp]) #[none, ]이어야 
+final = keras.layers.add([fm_first, fm_second, deep_comp]) #[none, ]이어야 
 
 ##final output should be [none,]
 
 
 # model 
 ###inputs 수정할 것 -- 필요한 모든 input 들어가게 
-model = keras.Model(inputs=inputs, outputs=final)
+model = keras.Model(inputs=deep_in, outputs=final)
 ##Ref:https://stackoverflow.com/questions/46544329/keras-add-external-trainable-variable-to-graph
 #/???????
-model.layers[-1].trainable_weights.extend([
+model.layers[0].trainable_weights.extend([
 emb_user,
 emb_doc,
 emb_author,
-emb_views,
-bias_user,
-bias_doc,
-bias_author])
+emb_views
+])
 
 model.summary()
 
