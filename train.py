@@ -1,4 +1,4 @@
-from nn_module import dense_block, get_embeddings_from_data, fm_block
+from nn_module2 import dense_block, get_embeddings_from_data, fm_block
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -20,7 +20,6 @@ data = {'user': ['Jason', 'Molly', 'Amy', 'Jake', 'Amy'],
         'y': [1,1,3,1,1]}
 df = pd.DataFrame(data)
 
-
 def create_model(K=5, F=4):
     embeddings= get_embeddings_from_data(df, emb_dim=K) # none, f, k
     dim_one_embeddings = get_embeddings_from_data(df, emb_dim=1)
@@ -37,4 +36,4 @@ def create_model(K=5, F=4):
 
 if __name__ == "__main__":
     res = create_model()
-    print(tf.shape(res))
+    model = keras.Model()
