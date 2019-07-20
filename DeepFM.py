@@ -1,6 +1,7 @@
 import nn_module 
 from nn_module import embed
 import tensorflow as tf
+import pandas as pd
 # F : the number of the feature fields
 # K : embedding size 
 
@@ -56,7 +57,7 @@ bias_doc = embed(df.doc, emb_dim=1, seed=1)
 bias_author = embed(df.author, emb_dim=1, seed=1)
 bias_views = embed(df.views, emb_dim=1, seed=1)
 
-###여기서 bias 는 first order 에 해당하는 weight값임
+###여기서 bias 는 first order 에 해당하는 weight값
 fm_first_order_list = [
 bias_user,
 bias_doc,
@@ -64,7 +65,7 @@ bias_author,
 bias_views
 ]
 fm_first_order_list = tf.concat(fm_first_order_list, axis=1) #[None, F]
-fm_list.append(fm_first_order_list)
+#fm_list.append(fm_first_order_list)
 
 # fm_second order - weight-1 connection
 
@@ -73,14 +74,14 @@ emb_sum_squared = tf.square(tf.reduce_sum(emb_concat, axis=1)) #[None,K]
 emb_squared_sum = tf.reduce_sum(tf.square(emb_concat), axis=1) #[None,K]
 
 fm_second_order = 0.5 * (emb_sum_squared - emb_squared_sum)
-fm_list.extend([emb_sum_squared, emb_squared_sum])
+#fm_list.extend([emb_sum_squared, emb_squared_sum])
 
 # fm_higher_order interactions
 enable_fm_higher_order = False
 if enable_fm_higher_order:
 	fm_higher_order = dense_block(fm_second_order, hidden_units=[K] * 2,
                                               dropouts=[0.] * 2, densenet=False, seed=1)
-	fm_list.append(fm_higher_order)
+	#fm_list.append(fm_higher_order)
 
 # Deep component
 
@@ -98,7 +99,7 @@ deep_out = dense_block(shape=deep_in.shape, hidden_units=hidden_units, dropouts=
 # DeepFM
 fm_first = tf.reduce_sum(fm_first_order_list, axis=1)
 fm_second = tf.reduce_sum(fm_second_order, axis=1) #[NONe,]
-##맞는지 체크 해야하뮤ㅠ
+ 
 deep_comp = tf.reduce_sum(tf.reshape(deep_out,[-1,K]), axis=1) #[NONe,]
 # this returns x + y.
 final = keras.layers.add([fm_first, fm_second, deep_comp]) #[none, ]이어야 

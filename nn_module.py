@@ -1,13 +1,12 @@
 import itertools
-
+import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras import layers
 import numpy as np
 
-#emb_dim=K
-
+K=5
 def embed(x,emb_dim=K,seed=1, flatten=False, reduce_sum=False):
 	if x.dtypes in ['int64','int32','float32','float64']:
 		tmp_x=x
@@ -27,6 +26,7 @@ def embed(x,emb_dim=K,seed=1, flatten=False, reduce_sum=False):
 	for i in range(len(x)):
 	    id_vec.append(f_dict[x[i]])
 
+
 	emb = keras.backend.variable(tf.random.uniform([size, emb_dim], minval, maxval, dtype=tf.float32, seed=seed)) 
 	out = tf.nn.embedding_lookup(emb,id_vec) #[None,emb_dim]
     #if flatten:
@@ -41,6 +41,12 @@ def embed(x,emb_dim=K,seed=1, flatten=False, reduce_sum=False):
 	else:
     	out = tf.multiply(out, feat_value)
     return out
+
+def embed_keras(x,K, flatten=False, reduce_sum=False):
+
+	emb=keras.layers.Dense(K,weight_init)
+
+    return emb
 
 
 def _dense_block_mode1( shape, hidden_units, dropouts, densenet=False, training=False, seed=0, bn=False, name="dense_block"):
@@ -67,7 +73,7 @@ def _dense_block_mode1( shape, hidden_units, dropouts, densenet=False, training=
             x = tf.concat([x, z], axis=-1)
         else:
             x = z
-    x = keras.layers.Dense(units=1,  activation=tf.nn.softmax, kernel_initializer=weight_init)(x)    
+    #x = keras.layers.Dense(units=1,  activation=tf.nn.softmax, kernel_initializer=weight_init)(x)    
         
     return x
 #    return keras.Model(inputs=inputs, outputs=x)
