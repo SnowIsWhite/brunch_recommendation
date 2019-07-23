@@ -127,8 +127,12 @@ def prepare_data(param):
     print("preparing meta and age...")
     meta, age = get_doc_meta_and_age(valid_doc, param['date_cat_num'])
     following = get_following_list(user_read_num1, user_read_num2)
+    print("preparing user read num categories...")
+    tmp = {key:user_read_num1[key] for key in user_read_num1}
+    tmp.update(user_read_num2)
+    user_read = categorize_value(tmp, cat_num=param['user_read_cat_num'])
     return valid_doc, user_read_doc1, user_read_num1, user_read_doc2, user_read_num2,\
-    popularity, meta, age, following
+    popularity, meta, age, following, user_read
 
 def __index(dict):
     ind={}
@@ -186,7 +190,7 @@ def data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexe
             writefile.write(json.dumps(line))
             writefile.write('\n')
 
-def generate_data(user_id, doc_id, valid_doc, user_read_doc, popularity, \
+def generate_data(user_id, doc_id, valid_doc, user_read_doc, user_read_num, popularity, \
 meta, age, following, dataframe, dummy):
     """
     author: from doc_id2author_id <- doc_id
@@ -220,10 +224,11 @@ meta, age, following, dataframe, dummy):
     dataframe['is_followed'] = check_is_followed(user_id, author_id, following)
     dataframe['popularity'] = popularity[doc_id]
     dataframe['y'] = get_y_views(user_id, doc_id, user_read_doc)
+    dataframe['views'] = user_read_num[user_id]
     return dataframe
 
 def generate_train_data(valid_doc, user_read_doc1, user_read_doc2,\
-popularity, meta, age, following, dataframe, dummy):
+user_read, popularity, meta, age, following, dataframe, dummy):
     """create data to train"""
     writefile = open('../data/train_data_raw.txt', 'w')
     writefile.write('')
@@ -231,19 +236,19 @@ popularity, meta, age, following, dataframe, dummy):
     for user_id in user_read_doc1:
         for doc_id in list(set(user_read_doc1[user_id])):
             d = generate_data(user_id, doc_id, valid_doc, user_read_doc1, \
-            popularity, meta, age, following, dataframe, dummy)
+            user_read, popularity, meta, age, following, dataframe, dummy)
             writefile.write(json.dumps(d))
             writefile.write('\n')
     for user_id in user_read_doc2:
         for doc_id in list(set(user_read_doc2[user_id])):
             d = generate_data(user_id, doc_id, valid_doc, user_read_doc2, \
-            popularity, meta, age, following, dataframe, dummy)
+            user_read, popularity, meta, age, following, dataframe, dummy)
             writefile.write(json.dumps(d))
             writefile.write('\n')
     return
 
 def generate_test_data(valid_doc, user_read_doc1, user_read_doc2,\
-popularity, meta, age, following, dataframe):
+user_read, popularity, meta, age, following, dataframe):
     test_file = open('../data/predict/dev.users', 'r')
     writefile = open('../data/test_data_raw.txt', 'w')
     writefile.write('')
@@ -252,7 +257,7 @@ popularity, meta, age, following, dataframe):
         user_id = line.strip()
         for doc_id in valid_doc:
             d = generate_data(user_id, doc_id, valid_doc, user_read_doc1, \
-            popularity, meta, age, following, dataframe)
+            user_read, popularity, meta, age, following, dataframe)
 
 def load_data(target='train'):
     df = pd.DataFrame()
@@ -270,6 +275,7 @@ if __name__ == "__main__":
         'doc_thresh': 100,
         'pop_cat_num': 100,
         'date_cat_num': 100,
+        'user_read_cat_num': 100,
         'etc_user_num': 200
     }
     dummy = {
@@ -278,9 +284,9 @@ if __name__ == "__main__":
         'DUMMY_MAG_ID' : -1
     }
     dataframe = {'user': '', 'doc':'', 'author': '', 'tagA': '', 'tagB': '', 'tagC':'',\
-    'is_followed': 0, 'magazine_id': '', 'popularity': 0, 'age': 0, 'y': 0}
+    'is_followed': 0, 'views': 0, 'magazine_id': '', 'popularity': 0, 'age': 0, 'y': 0}
     valid_doc, user_read_doc1, user_read_num1, user_read_doc2, user_read_num2,\
-    popularity, meta, age, following = prepare_data(param)
+    popularity, meta, age, following, user_read = prepare_data(param)
 
     print("Indexing...")
     doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed = \
@@ -288,10 +294,11 @@ if __name__ == "__main__":
 
     print("Generating train data...")
     generate_train_data(valid_doc, user_read_doc1, user_read_doc2,\
-    popularity, meta, age, following, dataframe, dummy)
+    user_read, popularity, meta, age, following, dataframe, dummy)
 
     print("Converting string to index...")
-    data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed, target_file='train')
+    data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, \
+    mag_indexed, target_file='train')
 
     # generate_test_data(valid_doc, user_read_doc1, user_read_doc2,\
-    # popularity, meta, age, following, dataframe, dummy)
+    # user_read, popularity, meta, age, following, dataframe, dummy)
