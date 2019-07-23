@@ -110,8 +110,9 @@ def get_following_list(user_read_num1, user_read_num2):
     return result
 
 def check_is_followed(user_id, author_id, following_data):
-    if author_id in following_data[user_id]:
-        return 1
+    if user_id in following_data:
+        if author_id in following_data[user_id]:
+            return 1
     return 0
 
 def prepare_data(param):
@@ -206,6 +207,7 @@ meta, age, following, dataframe, dummy):
     tag_list = ['tagA', 'tagB', 'tagC']
     if doc_id in meta:
         for i, keyword in enumerate(meta[doc_id]['keyword_list']):
+            if i >= 3: break
             dataframe[tag_list[i]] = keyword
         dataframe['magazine_id'] = meta[doc_id]['mag_id']
         dataframe['age'] = age[doc_id]
