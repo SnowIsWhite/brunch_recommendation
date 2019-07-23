@@ -134,9 +134,9 @@ def prepare_data(param):
     return valid_doc, user_read_doc1, user_read_num1, user_read_doc2, user_read_num2,\
     popularity, meta, age, following, user_read
 
-def __index(dict):
+def __index(dict, name=1):
     ind={}
-    if dict==user_read_num2:
+    if name==2:
         ind.update({key:1000000 for key in dict.keys()}) ##1000000은 수정 가능
     else:
         for (index, entry) in enumerate(dict):
@@ -146,7 +146,7 @@ def __index(dict):
 def get_index_data(valid_doc, user_read_num1, user_read_num2, meta, dummy):
     doc_indexed = __index(valid_doc)
     valid_user_idx = __index(user_read_num1)
-    etc_user_idx = __index(user_read_num2)
+    etc_user_idx = __index(user_read_num2, name=2)
     valid_user_idx.update(etc_user_idx)
     user_idx=valid_user_idx
 
@@ -288,7 +288,7 @@ def make_data(state='train'):
         'doc_thresh': 100,
         'pop_cat_num': 100,
         'date_cat_num': 100,
-        'user_read_cat_num': 100,
+        'user_read_cat_num': 20,
         'etc_user_num': 200
     }
     dummy = {
