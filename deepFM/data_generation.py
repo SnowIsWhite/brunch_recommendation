@@ -61,7 +61,7 @@ def categorize_value(target, cat_num=100):
     for key in target:
         for i in range(cat_num):
             if target[key] >= (min_ + division*i) and target[key] < (min_+division*(i+1)):
-                new_target[key] = i+1
+                new_target[key] = i
         if target[key] >= min_ + division*cat_num:
             new_target[key] = cat_num
     return new_target
@@ -85,7 +85,7 @@ def get_doc_meta_and_age(valid_doc, date_cat_num):
     meta={}
     age = {}
     for line in data.readlines():
-        line = json.loads(line)
+        line = json.loads(line.strip())
         if line['id'] in valid_doc:
             tmp_dict={}
             tmp_age={}
@@ -137,24 +137,8 @@ def __index(dict):
         for (index, entry) in enumerate(dict):
             ind.update({entry:index})
     return ind
-#for tags & author - dataframe화 이후
-##tag_a=["여행","자유"]/tag_b=["a","b"]/tag_c=["c","d"]꼴일때 - 각각의 tag가 input!
-#
-# def idx_for_col(x):
-#     t = [doc.split(" ") for doc in x]
-#     all_values = itertools.chain.from_iterable(t)
-#     f_dict = {token: idx for idx, token in enumerate(set(all_values))}
-#     size = len(f_dict) # the number of unique field value(feature) = p_i
-#     id_vec=[]
-#     for i in range(len(x)):
-#         id_vec.append(f_dict[x[i]])
-#     return id_vec
-# tag_a_idx = idx_for_col(tag_a)
-# tag_b_idx = idx_for_col(tag_b)
-# tag_c_idx = idx_for_col(tag_c)
-# author_idx = idx_for_col(author)
 
-def get_index_data(valid_doc, user_read_num1, user_read_num2, meta):
+def get_index_data(valid_doc, user_read_num1, user_read_num2, meta, dummy):
     doc_indexed = __index(valid_doc)
     valid_user_idx = __index(user_read_num1)
     etc_user_idx = __index(user_read_num2)
@@ -167,13 +151,20 @@ def get_index_data(valid_doc, user_read_num1, user_read_num2, meta):
 
     # tags indx
     tags = []
+    mags = []
     for doc_id in meta:
         tags += meta[doc_id]['keyword_list']
         tags = list(set(tags))
+        mags += meta[doc_id]['mag_id']
+        mags = list(set(mags))
+    # add DUMMY_TAG and empty tag
+    tags += ['', dummy['DUMMY_TAG']]
+    mags += [dummy['DUMMY_MAG_ID']]
     tag_indexed = {tag:idx for idx, tag in enumerate(tags)}
-    return doc_indexed, user_idx, author_indexed, tag_indexed
+    mag_indexed = {mag:idx for idx, mag in enumerate(mags)}
+    return doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed
 
-def data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, target_file='train'):
+def data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed, target_file='train'):
     writefile = open('../data/{}_data.txt'.format(target_file), 'w')
     writefile.write('')
     writefile = open('../data/{}_data.txt'.format(target_file), 'a')
@@ -190,12 +181,12 @@ def data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, target_fil
             line['tagA'] = tag_indexed[line['tagA']]
             line['tagB'] = tag_indexed[line['tagB']]
             line['tagC'] = tag_indexed[line['tagC']]
+            line['magazine_id'] = mag_indexed[line['magazine_id']]
             writefile.write(json.dumps(line))
             writefile.write('\n')
 
-
 def generate_data(user_id, doc_id, valid_doc, user_read_doc, popularity, \
-meta, age, following, dataframe):
+meta, age, following, dataframe, dummy):
     """
     author: from doc_id2author_id <- doc_id
     tags : meta -> keyword_list
@@ -209,33 +200,40 @@ meta, age, following, dataframe):
     dataframe['user'] = user_id
     dataframe['doc'] = doc_id
     dataframe['author'] = author_id
-    dataframe['tagA'] = meta[doc_id]['keyword_list'][0]
-    dataframe['tagB'] = meta[doc_id]['keyword_list'][1]
-    dataframe['tagC'] = meta[doc_id]['keyword_list'][2]
-    dataframe['magazine_id'] = meta[doc_id]['mag_id']
-    dataframe['age'] = age[doc_id]
+    # add dummy data
+    if doc_id in meta:
+        dataframe['tagA'] = meta[doc_id]['keyword_list'][0]
+        dataframe['tagB'] = meta[doc_id]['keyword_list'][1]
+        dataframe['tagC'] = meta[doc_id]['keyword_list'][2]
+        dataframe['magazine_id'] = meta[doc_id]['mag_id']
+        dataframe['age'] = age[doc_id]
+    else:
+        dataframe['tagA'] = dummy['DUMMY_TAG']
+        dataframe['tagB'] = dummy['DUMMY_TAG']
+        dataframe['tagC'] = dummy['DUMMY_TAG']
+        dataframe['magazine_id'] = dummy['DUMMY_MAG_ID']
+        dataframe['age'] = dummy['DUMMY_DATE']
     dataframe['is_followed'] = check_is_followed(user_id, author_id, following)
     dataframe['popularity'] = popularity[doc_id]
     dataframe['y'] = get_y_views(user_id, doc_id, user_read_doc)
     return dataframe
 
 def generate_train_data(valid_doc, user_read_doc1, user_read_doc2,\
-popularity, meta, age, following, dataframe):
+popularity, meta, age, following, dataframe, dummy):
     """create data to train"""
     writefile = open('../data/train_data_raw.txt', 'w')
     writefile.write('')
     writefile = open('../data/train_data_raw.txt', 'a')
     for user_id in user_read_doc1:
-        for doc_id in user_read_doc1[user_id]:
+        for doc_id in list(set(user_read_doc1[user_id])):
             d = generate_data(user_id, doc_id, valid_doc, user_read_doc1, \
-            popularity, meta, age, following, dataframe)
+            popularity, meta, age, following, dataframe, dummy)
             writefile.write(json.dumps(d))
             writefile.write('\n')
     for user_id in user_read_doc2:
-        for doc_id in user_read_doc2[user_id]:
+        for doc_id in list(set(user_read_doc2[user_id])):
             d = generate_data(user_id, doc_id, valid_doc, user_read_doc2, \
-            popularity, meta, age, following, dataframe)
-            print(d)
+            popularity, meta, age, following, dataframe, dummy)
             writefile.write(json.dumps(d))
             writefile.write('\n')
     return
@@ -252,6 +250,15 @@ popularity, meta, age, following, dataframe):
             d = generate_data(user_id, doc_id, valid_doc, user_read_doc1, \
             popularity, meta, age, following, dataframe)
 
+def load_data(target='train'):
+    df = pd.DataFrame()
+    with open('../data/{}_data.txt'.format(target), 'r') as f:
+        for i, line in enumerate(f.readlines()):
+            line = json.loads(line.strip())
+            dict = {i: line}
+            tmp_df = pd.DataFrame(dict).transpose()
+            df = pd.concat([df, tmp_df], axis=0)
+    return df
 
 if __name__ == "__main__":
     param = {
@@ -261,18 +268,26 @@ if __name__ == "__main__":
         'date_cat_num': 100,
         'etc_user_num': 200
     }
+    dummy = {
+        'DUMMY_TAG' = 'JAEICK',
+        'DUMMY_DATE' = param['date_cat_num']+1,
+        'DUMMY_MAG_ID' = -1
+    }
     dataframe = {'user': '', 'doc':'', 'author': '', 'tagA': '', 'tagB': '', 'tagC':'',\
     'is_followed': 0, 'magazine_id': '', 'popularity': 0, 'age': 0, 'y': 0}
     valid_doc, user_read_doc1, user_read_num1, user_read_doc2, user_read_num2,\
     popularity, meta, age, following = prepare_data(param)
 
-    #doc_indexed, user_idx, author_indexed, tag_indexed = \
-    #get_index_data(valid_doc, user_read_num1, user_read_num2, meta)
+    print("Indexing...")
+    doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed = \
+    get_index_data(valid_doc, user_read_num1, user_read_num2, meta, dummy)
 
+    print("Generating train data...")
     generate_train_data(valid_doc, user_read_doc1, user_read_doc2,\
-    popularity, meta, age, following, dataframe)
+    popularity, meta, age, following, dataframe, dummy)
 
-    # data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, target_file='train')
-    #
+    print("Converting string to index...")
+    data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed, target_file='train')
+
     # generate_test_data(valid_doc, user_read_doc1, user_read_doc2,\
-    # popularity, meta, age, following, dataframe)
+    # popularity, meta, age, following, dataframe, dummy)
