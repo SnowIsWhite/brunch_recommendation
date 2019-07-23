@@ -155,11 +155,11 @@ def get_index_data(valid_doc, user_read_num1, user_read_num2, meta, dummy):
     for doc_id in meta:
         tags += meta[doc_id]['keyword_list']
         tags = list(set(tags))
-        mags += meta[doc_id]['mag_id']
+        mags.append(meta[doc_id]['mag_id'])
         mags = list(set(mags))
     # add DUMMY_TAG and empty tag
     tags += ['', dummy['DUMMY_TAG']]
-    mags += [dummy['DUMMY_MAG_ID']]
+    mags.append(dummy['DUMMY_MAG_ID'])
     tag_indexed = {tag:idx for idx, tag in enumerate(tags)}
     mag_indexed = {mag:idx for idx, mag in enumerate(mags)}
     return doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed
@@ -195,16 +195,18 @@ meta, age, following, dataframe, dummy):
     is_followed: check_is_followed <- following, user_id, author_id
     pop: popularity
     y: get_y_views <- user_id, doc_id, user_read_doc
+
+    is_followed, y changes for test data
     """
     author_id = doc_id2author_id(doc_id)
     dataframe['user'] = user_id
     dataframe['doc'] = doc_id
     dataframe['author'] = author_id
     # add dummy data
+    tag_list = ['tagA', 'tagB', 'tagC']
     if doc_id in meta:
-        dataframe['tagA'] = meta[doc_id]['keyword_list'][0]
-        dataframe['tagB'] = meta[doc_id]['keyword_list'][1]
-        dataframe['tagC'] = meta[doc_id]['keyword_list'][2]
+        for i, keyword in enumerate(meta[doc_id]['keyword_list']):
+            dataframe[tag_list[i]] = keyword
         dataframe['magazine_id'] = meta[doc_id]['mag_id']
         dataframe['age'] = age[doc_id]
     else:
@@ -269,9 +271,9 @@ if __name__ == "__main__":
         'etc_user_num': 200
     }
     dummy = {
-        'DUMMY_TAG' = 'JAEICK',
-        'DUMMY_DATE' = param['date_cat_num']+1,
-        'DUMMY_MAG_ID' = -1
+        'DUMMY_TAG' : 'JAEICK',
+        'DUMMY_DATE' : param['date_cat_num']+1,
+        'DUMMY_MAG_ID' : -1
     }
     dataframe = {'user': '', 'doc':'', 'author': '', 'tagA': '', 'tagB': '', 'tagC':'',\
     'is_followed': 0, 'magazine_id': '', 'popularity': 0, 'age': 0, 'y': 0}
