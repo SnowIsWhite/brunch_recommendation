@@ -34,10 +34,10 @@ for i in range(F):
 #                buffer_size=len(X_train)).batch(batch_size)
 #test_dataset = tf.data.Dataset.from_tensor_slices((X_test, Y_test))
 
-
+#hidden 400 400 400/ adam
 m = model(embedding_size, field_vocab_size=field_vocab_size, hidden_units=hidden_units, dropout=dropout)
 m.summary()
 m.compile(optimizer='adam',
-              loss='sparse_categorical_crossentropy',
+              loss='mean_squared_error',
               metrics=['accuracy'])
 m.fit(input_data,Y_train, epochs=5)
