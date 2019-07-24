@@ -12,13 +12,13 @@ from model import model
 #df.head()
 
 #hyperparamets
-hidden_units=[400,400,400,400,400,400]
+hidden_units=[400,400,400]
 batch_size = 64
 dropout=0.5
 embedding_size = 100
 lr = 0.001
 
-df = load_data('train', data_num=1000)
+df = load_data('train', data_num=-1)
 print("loading data done")
 X=df.iloc[:,:-1]
 Y=df.iloc[:,-1]
@@ -56,6 +56,6 @@ history = m.fit(input_data,y_train, batch_size=batch_size, epochs=5, validation_
 # # Save weights to disk
 # m.save_weights('./trained_model.h5')
 
-m.save('./trained_model.h5')
+m.save('./trained_model1.h5')
 # del model
 # model = keras.models.load_model('path_to_my_model.h5')

@@ -283,6 +283,8 @@ def load_data(target='train', data_num=-1):
             if data_num != -1 and i % data_num == 0 and i != 0:
                 print("Progress: {}".format(str(i)))
                 return df
+            if i % 10000 == 0:
+                print("Progress: {}".format((str(i*100/6000000))))
             line = json.loads(line.strip())
             dict = {i: line}
             tmp_df = pd.DataFrame(dict).transpose()
