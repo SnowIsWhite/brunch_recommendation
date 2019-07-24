@@ -272,11 +272,11 @@ user_read, popularity, meta, age, following, dataframe):
             writefile.write('\n')
     return
 
-def load_data(target='train'):
+def load_data(target='train', data_num=-1):
     df = pd.DataFrame()
     with open('../data/{}_data.txt'.format(target), 'r') as f:
         for i, line in enumerate(f.readlines()):
-            if i % 100 == 0 and i != 0:
+            if data_num != -1 and i % data_num == 0 and i != 0:
                 print("Progress: {}".format(str(i)))
                 return df
             line = json.loads(line.strip())
@@ -304,7 +304,7 @@ mag_indexed, param, dataframe):
     with open('../data/field_vocab_size.txt', 'w') as f:
         f.write(json.dumps(dataframe))
     return
-    
+
 def get_field_vocab_size():
     with open('../data/field_vocab_size.txt', 'r') as f:
         data = json.loads(f.readlines()[0].strip())
