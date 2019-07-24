@@ -49,4 +49,13 @@ m.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=lr),
 m.summary()
 history = m.fit(input_data,y_train, batch_size=batch_size, epochs=5, validation_data=(val_data, y_val))
 
-m.save('../trained_model.h5')
+# # Save JSON config to disk
+# json_config = m.to_json()
+# with open('./model_config.json', 'w') as json_file:
+#     json_file.write(json_config)
+# # Save weights to disk
+# m.save_weights('./trained_model.h5')
+
+m.save('./trained_model.h5')
+# del model
+# model = keras.models.load_model('path_to_my_model.h5')
