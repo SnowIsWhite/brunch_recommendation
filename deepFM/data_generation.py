@@ -276,11 +276,39 @@ def load_data(target='train'):
     df = pd.DataFrame()
     with open('../data/{}_data.txt'.format(target), 'r') as f:
         for i, line in enumerate(f.readlines()):
+            if i % 100 == 0 and i != 0:
+                print("Progress: {}".format(str(i)))
+                return df
             line = json.loads(line.strip())
             dict = {i: line}
             tmp_df = pd.DataFrame(dict).transpose()
             df = pd.concat([df, tmp_df], axis=0)
     return df
+
+def save_field_vocab_size(doc_indexed, user_idx, author_indexed, tag_indexed, \
+mag_indexed, param, dataframe):
+    # user, doc, author, tagA, tagB, tagC, is_followed, views, magazine_id,
+    # popularity, age
+
+    dataframe['user'] = len(user_idx)
+    dataframe['doc'] = len(doc_indexed)
+    dataframe['author'] = len(author_indexed)
+    dataframe['tagA'] = len(tag_indexed)
+    dataframe['tagB'] = len(tag_indexed)
+    dataframe['tagC'] = len(tag_indexed)
+    dataframe['magazine_id'] = len(mag_indexed)
+    dataframe['is_followed'] = 2
+    dataframe['views'] = param['user_read_cat_num']
+    dataframe['popularity'] = param['pop_cat_num']
+    dataframe['age'] = param['date_cat_num'] + 1
+    with open('../data/field_vocab_size.txt', 'w') as f:
+        f.write(json.dumps(dataframe))
+    return
+    
+def get_field_vocab_size():
+    with open('../data/field_vocab_size.txt', 'r') as f:
+        data = json.loads(f.readlines()[0].strip())
+    return data
 
 def make_data(state='train'):
     param = {
@@ -313,6 +341,10 @@ def make_data(state='train'):
         print("Converting string to index...")
         data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, \
         mag_indexed, target_file=state)
+
+        print("Saving field vocab size...")
+        save_field_vocab_size(doc_indexed, user_idx, author_indexed, tag_indexed, \
+        mag_indexed, param, dataframe)
 
     else:
         print("Generating test data...")
