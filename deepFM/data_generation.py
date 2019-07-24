@@ -265,6 +265,10 @@ user_read, popularity, meta, age, following, dataframe):
     for line in test_file.readlines():
         user_id = line.strip()
         for doc_id in valid_doc:
+            if user_id in user_read_doc1:
+                if doc_id in user_read_doc1[doc_id]: continue
+            if user_id in user_read_doc2:
+                if doc_id in user_read_doc2[doc_id]: continue
             d = generate_data(user_id, doc_id, valid_doc, tmp_read_doc, \
             user_read, popularity, meta, age, following, dataframe, \
             state='test')
