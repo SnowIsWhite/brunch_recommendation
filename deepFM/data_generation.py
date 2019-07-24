@@ -134,10 +134,10 @@ def prepare_data(param):
     return valid_doc, user_read_doc1, user_read_num1, user_read_doc2, user_read_num2,\
     popularity, meta, age, following, user_read
 
-def __index(dict, name=1):
+def __index(dict, name=1, etc=1):
     ind={}
     if name==2:
-        ind.update({key:1000000 for key in dict.keys()}) ##1000000은 수정 가능
+        ind.update({key:etc for key in dict.keys()}) ##1000000은 수정 가능
     else:
         for (index, entry) in enumerate(dict):
             ind.update({entry:index})
@@ -146,7 +146,8 @@ def __index(dict, name=1):
 def get_index_data(valid_doc, user_read_num1, user_read_num2, meta, dummy):
     doc_indexed = __index(valid_doc)
     valid_user_idx = __index(user_read_num1)
-    etc_user_idx = __index(user_read_num2, name=2)
+    etc_user_num = len(valid_user_idx)
+    etc_user_idx = __index(user_read_num2, name=2, etc=etc_user_num)
     valid_user_idx.update(etc_user_idx)
     user_idx=valid_user_idx
 
@@ -167,9 +168,9 @@ def get_index_data(valid_doc, user_read_num1, user_read_num2, meta, dummy):
     mags.append(dummy['DUMMY_MAG_ID'])
     tag_indexed = {tag:idx for idx, tag in enumerate(tags)}
     mag_indexed = {mag:idx for idx, mag in enumerate(mags)}
-    return doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed
+    return doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed, etc_user_num
 
-def data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed, target_file='train'):
+def data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed, etc_user_num, target_file='train'):
     writefile = open('../data/{}_data.txt'.format(target_file), 'w')
     writefile.write('')
     writefile = open('../data/{}_data.txt'.format(target_file), 'a')
@@ -180,7 +181,7 @@ def data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexe
             if line['user'] in user_idx:
                 line['user'] = user_idx[line['user']]
             else:
-                line['user'] = 1000000
+                line['user'] = etc_user_num
             line['doc'] = doc_indexed[line['doc']]
             line['author'] = author_indexed[line['author']]
             line['tagA'] = tag_indexed[line['tagA']]
@@ -286,7 +287,7 @@ def load_data(target='train', data_num=-1):
                 return df
             if i % 10000 == 0:
                 end_time = time.time()
-                print("Progress: {} time: {}s".format(str(i), str(start_time-end_time)))
+                print("Progress: {} time: {}s".format(str(i), str(end_time-start_time)))
                 start_time = time.time()
             line = json.loads(line.strip())
             dict = {i: line}
@@ -322,7 +323,7 @@ def get_field_vocab_size():
 def make_data(state='train'):
     param = {
         'user_thresh': 300,
-        'doc_thresh': 500,
+        'doc_thresh': 5000,
         'pop_cat_num': 100,
         'date_cat_num': 100,
         'user_read_cat_num': 20,
@@ -339,7 +340,7 @@ def make_data(state='train'):
     popularity, meta, age, following, user_read = prepare_data(param)
 
     print("Indexing...")
-    doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed = \
+    doc_indexed, user_idx, author_indexed, tag_indexed, mag_indexed, etc_user_num = \
     get_index_data(valid_doc, user_read_num1, user_read_num2, meta, dummy)
 
     if state == 'train':
@@ -349,7 +350,7 @@ def make_data(state='train'):
 
         print("Converting string to index...")
         data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, \
-        mag_indexed, target_file=state)
+        mag_indexed, etc_user_num, target_file=state)
 
         print("Saving field vocab size...")
         save_field_vocab_size(doc_indexed, user_idx, author_indexed, tag_indexed, \
@@ -362,7 +363,7 @@ def make_data(state='train'):
 
         print("Converting string to index...")
         data_to_index(doc_indexed, user_idx, author_indexed, tag_indexed, \
-        mag_indexed, target_file=state)
+        mag_indexed, etc_user_num, target_file=state)
 
 if __name__ == "__main__":
     make_data('train')
